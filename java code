@@ -1,0 +1,61 @@
+// ...
+
+class ClientHandler implements Runnable {
+    private Socket clientSocket;
+
+    public ClientHandler(Socket clientSocket) {
+        this.clientSocket = clientSocket;
+    }
+
+    @Override
+    public void run() {
+        Connection connection = null;
+
+        try (PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+
+            // Read data from the client
+            String civilNumber = in.readLine();
+            int bookingOption = Integer.parseInt(in.readLine());
+            int numberOfDays = Integer.parseInt(in.readLine());
+            double ticketPrice = Double.parseDouble(in.readLine());
+
+            // Establish a connection to the database
+            connection = DriverManager.getConnection("jdbc:mysql://your_database_host:3306/your_database_name", "your_username", "your_password");
+
+            // Process data and query the database (replace with your actual logic)
+            double discount = getDiscountFromDatabase(bookingOption, connection);
+
+            // Calculate the price, discount, and final price
+            double ticketCost = ticketPrice * bookingOption * numberOfDays;
+            double discountAmount = ticketCost * discount;
+            double finalPrice = ticketCost - discountAmount;
+
+            // Send a response back to the client
+            String response = "Ticket Price: " + ticketCost + ", Discount: " + discountAmount + ", Final Price: " + finalPrice;
+            out.println(response);
+
+        } catch (Exception e) {
+            System.out.println("Error handling client request: " + e.getMessage());
+        } finally {
+            try {
+                // Close the database connection
+                if (connection != null) {
+                    connection.close();
+                    System.out.println("Database connection closed.");
+                }
+
+                // Close the client socket after use
+                clientSocket.close();
+                System.out.println("Connection closed.");
+
+            } catch (Exception e) {
+                System.out.println("Error closing connection: " + e.getMessage());
+            }
+        }
+    }
+
+    // Existing methods remain unchanged...
+
+}
+
